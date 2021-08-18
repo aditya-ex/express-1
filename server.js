@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const express = require('express');
-const {body} = require('express-validator');
+const bcrypt = require('bcrypt');
 const bodyParser = require('body-parser')
 
 const app = express();
@@ -22,10 +22,12 @@ const Schema = mongoose.Schema;
 const UserScema = new Schema({
     username: {
         type: String,
+        unique: true,
         required: true
     },
     email: {
         type:String,
+        unique: true,
         required: true
     },
     password: {
@@ -48,37 +50,46 @@ const UserScema = new Schema({
 
 const User = mongoose.model('User', UserScema);
 
-app.post('/user/register', body('con_password').custom((value,{req})=>{
-  if(value!==req.body.password){
-    throw new Error('Password confirmation does not match password');
-  }
-}), body('email').custom(value => {
-  return user.findUserByEmail(value).then(userValue => {
-    if (userValue) {
-      return Promise.reject('E-mail already in use');
-    }
-    console.log(user.findUserByEmail(value))
-  });
-}),body('username').custom(value => {
-  return user.findUserByUsername(value).then(userValue => {
-    if (userValue) {
-      return Promise.reject('username already in use');
-    }
-  });
-}),(req,res)=>{ 
+ app.post('/user/register', async(req,res)=>{ 
   console.log(req.body);
   const user = new User ();
+  const salt = await bcrypt.genSalt(10);
     user.username= req.body.username;
     user.email=req.body.email;
     user.password= req.body.password;
     user.con_password= req.body.con_password;
     user.firstname= req.body.firstname;
     user.lastname=req.body.lastname;
-  user.save();
-  res.send('user created');
+    
+      if(user.password === user.con_password){
+       user.password =  await bcrypt.hash(req.body.password, salt);
+       user.con_password = await bcrypt.hash(req.body.con_password, salt);
+        user.save().then((doc) => res.status(201).send(doc));
+      }else{
+        console.log('password dont match');
+      }
 });
 
+app.post("/user/login", async (req, res) => {
+  console.log(req.body);
+  const body = req.body;
+  const user = await User.findOne({ username: body.username });
+  
+  if (user) {
+    // check user password with hashed password stored in the database
+    const validPassword = await bcrypt.compare(body.password, user.password);
+    if (validPassword) {
+      let access_token = user._id;
+      res.send(access_token);
+      console.log(access_token);
+    } else {
+      res.status(500);
+    }
+  }
+});
+app.get('/user/get', (req,res)=>{
+  console.log(access_token);
+  res.send('hello world');
+})
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`Server up and running on port ${port} !`));
-
-
