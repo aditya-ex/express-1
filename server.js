@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
-const express = require('express');
-const bcrypt = require('bcrypt');
-const bodyParser = require('body-parser')
+const express = require("express");
+const bcrypt = require("bcrypt");
+const bodyParser = require("body-parser");
 
 const app = express();
 
@@ -19,62 +19,62 @@ mongoose
 app.use(express.json());
 
 const Schema = mongoose.Schema;
-const UserScema = new Schema({
-    username: {
-        type: String,
-        unique: true,
-        required: true
-    },
-    email: {
-        type:String,
-        unique: true,
-        required: true
-    },
-    password: {
-        type:String,
-        required: true
-    },
-    con_password: {
-        type: String,
-        required: true
-    },
-    firstname:{
-        type: String,
-        required: true
-    },
-    lastname:{
-        type: String,
-        required: true
-    }
+const UserSchema = new Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  con_password: {
+    type: String,
+    required: true,
+  },
+  firstname: {
+    type: String,
+    required: true,
+  },
+  lastname: {
+    type: String,
+    required: true,
+  },
 });
 
-const User = mongoose.model('User', UserScema);
+const User = mongoose.model("User", UserSchema);
 
- app.post('/user/register', async(req,res)=>{ 
+app.post("/user/register", async (req, res) => {
   console.log(req.body);
-  const user = new User ();
+  const user = new User();
   const salt = await bcrypt.genSalt(10);
-    user.username= req.body.username;
-    user.email=req.body.email;
-    user.password= req.body.password;
-    user.con_password= req.body.con_password;
-    user.firstname= req.body.firstname;
-    user.lastname=req.body.lastname;
-    
-      if(user.password === user.con_password){
-       user.password =  await bcrypt.hash(req.body.password, salt);
-       user.con_password = await bcrypt.hash(req.body.con_password, salt);
-        user.save().then((doc) => res.status(201).send(doc));
-      }else{
-        console.log('password dont match');
-      }
+  user.username = req.body.username;
+  user.email = req.body.email;
+  user.password = req.body.password;
+  user.con_password = req.body.con_password;
+  user.firstname = req.body.firstname;
+  user.lastname = req.body.lastname;
+
+  if (user.password === user.con_password) {
+    user.password = await bcrypt.hash(req.body.password, salt);
+    user.con_password = await bcrypt.hash(req.body.con_password, salt);
+    user.save().then((doc) => res.status(201).send(doc));
+  } else {
+    console.log("password dont match");
+  }
 });
 
 app.post("/user/login", async (req, res) => {
   console.log(req.body);
   const body = req.body;
   const user = await User.findOne({ username: body.username });
-  
+
   if (user) {
     // check user password with hashed password stored in the database
     const validPassword = await bcrypt.compare(body.password, user.password);
@@ -84,12 +84,43 @@ app.post("/user/login", async (req, res) => {
       console.log(access_token);
     } else {
       res.status(500);
+      console.log(res.status(500));
     }
   }
 });
-app.get('/user/get', (req,res)=>{
-  console.log(access_token);
-  res.send('hello world');
-})
+
+const checkObjectId = (idToCheck) => (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.headers[idToCheck]))
+    return res.status(400).json({ msg: "Invalid ID" });
+  next();
+};
+
+app.get("/user/get", checkObjectId("access_token"), async (req, res) => {
+  
+  try{
+    const userResult = await User.findById(req.headers['access_token']);
+    if(!userResult){
+      return res.status(404).json({msg: "user not found"})
+    }
+    res.json(userResult);
+  }catch(err){
+    console.log(err.message);
+    res.status(500).send('server error')
+  }
+});
+
+app.put("/user/delete", checkObjectId("access_token"), async (req, res) =>{
+  try{
+    const userResult = await User.findById(req.headers['access_token']);
+    if(!userResult){
+      return res.status(404).json({msg: "user not found"})
+    }
+    userResult.remove();
+    // res.json(userResult);
+  }catch(err){
+    console.log(err.message);
+    res.status(500).send('server error')
+  }
+});
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`Server up and running on port ${port} !`));
