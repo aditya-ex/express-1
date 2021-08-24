@@ -66,6 +66,7 @@ app.post("/user/register", async (req, res) => {
     user.con_password = await bcrypt.hash(req.body.con_password, salt);
     user.save().then((doc) => res.status(201).send(doc));
   } else {
+    res.status(401).send("unauthorized");
     console.log("password dont match");
   }
 });
@@ -76,7 +77,6 @@ app.post("/user/login", async (req, res) => {
   const user = await User.findOne({ username: body.username });
 
   if (user) {
-    // check user password with hashed password stored in the database
     const validPassword = await bcrypt.compare(body.password, user.password);
     if (validPassword) {
       let access_token = user._id;
@@ -84,7 +84,7 @@ app.post("/user/login", async (req, res) => {
       console.log(access_token);
     } else {
       res.status(500);
-      console.log(res.status(500));
+      res.send("internal server error");
     }
   }
 });
@@ -96,31 +96,39 @@ const checkObjectId = (idToCheck) => (req, res, next) => {
 };
 
 app.get("/user/get", checkObjectId("access_token"), async (req, res) => {
-  
-  try{
-    const userResult = await User.findById(req.headers['access_token']);
-    if(!userResult){
-      return res.status(404).json({msg: "user not found"})
+  try {
+    const userResult = await User.findById(req.headers["access_token"]);
+    if (!userResult) {
+      return res.status(404).json({ msg: "user not found" });
     }
     res.json(userResult);
-  }catch(err){
+  } catch (err) {
     console.log(err.message);
-    res.status(500).send('server error')
+    res.status(500).send("server error");
   }
 });
 
-app.put("/user/delete", checkObjectId("access_token"), async (req, res) =>{
-  try{
-    const userResult = await User.findById(req.headers['access_token']);
-    if(!userResult){
-      return res.status(404).json({msg: "user not found"})
+app.put("/user/delete", checkObjectId("access_token"), async (req, res) => {
+  try {
+    const userResult = await User.findById(req.headers["access_token"]);
+    if (!userResult) {
+      return res.status(404).json({ msg: "user not found" });
     }
     userResult.remove();
-    // res.json(userResult);
-  }catch(err){
+  } catch (err) {
     console.log(err.message);
-    res.status(500).send('server error')
+    res.status(500).send("server error");
   }
 });
+
+app.get("/user/list/:page", async (req, res) => {
+  let perPage = 10;
+  let page = Math.max(0, req.params["page"]);
+  let userList = await User.find()
+    .skip(perPage * (page - 1))
+    .limit(perPage);
+  res.json(userList);
+});
+
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`Server up and running on port ${port} !`));
