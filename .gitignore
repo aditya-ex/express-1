@@ -1,3 +1,2 @@
 node_modules
-userModel.js
-userRoutes.js
+.env
