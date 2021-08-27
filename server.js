@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const express = require("express");
-const dotenv = require("dotenv").config();
 const bodyParser = require("body-parser");
 
 const users = require("./routes/api/users");
@@ -8,6 +7,8 @@ const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
+require("dotenv").config();
 
 const db = process.env.URI;
 
