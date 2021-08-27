@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
-const User = require("../../models/User");
+const User = require("../models/User");
 const mongoose = require("mongoose");
+const checkObjectId = require("../config/config");
 
 router.post("/register", async (req, res) => {
   const user = new User();
@@ -11,10 +12,10 @@ router.post("/register", async (req, res) => {
   user.email = req.body.email;
   user.firstname = req.body.firstname;
   user.lastname = req.body.lastname;
-
-  if (user.password === user.con_password) {
-    user.password = await bcrypt.hash(req.body.password, salt);
-    user.con_password = await bcrypt.hash(req.body.con_password, salt);
+  password = req.body.password;
+  con_password = req.body.con_password;
+  if (password == con_password) {
+    user.password = await bcrypt.hash(password, salt);
     let savedUser = await user.save();
     res.status(201).send(savedUser);
   } else {
@@ -37,12 +38,6 @@ router.post("/login", async (req, res) => {
     }
   }
 });
-
-const checkObjectId = (access_token) => (req, res, next) => {
-  if (!mongoose.Types.ObjectId.isValid(req.headers[access_token]))
-    return res.status(400).json({ msg: "Invalid ID" });
-  next();
-};
 
 router.get("/get", checkObjectId("access_token"), async (req, res) => {
   try {
