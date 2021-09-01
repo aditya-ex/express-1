@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
-const mongoose = require("mongoose");
 const checkObjectId = require("../config/config");
 
 router.post("/register", async (req, res) => {
@@ -33,15 +32,14 @@ router.post("/login", async (req, res) => {
       let access_token = user._id;
       res.send(access_token);
     } else {
-      res.status(500);
-      res.send("internal server error");
+      res.status(500).send("internal server error");
     }
   }
 });
 
-router.get("/get", checkObjectId("access_token"), async (req, res) => {
+router.get("/get", checkObjectId, async (req, res) => {
   try {
-    const userResult = await User.findById(req.headers["access_token"]);
+    const userResult = await User.findById(req.headers.access_token);
     if (!userResult) {
       return res.status(404).json({ msg: "user not found" });
     }
@@ -52,9 +50,9 @@ router.get("/get", checkObjectId("access_token"), async (req, res) => {
   }
 });
 
-router.put("/delete", checkObjectId("access_token"), async (req, res) => {
+router.put("/delete", checkObjectId, async (req, res) => {
   try {
-    const userResult = await User.findById(req.headers["access_token"]);
+    const userResult = await User.findById(req.headers.access_token);
     if (!userResult) {
       res.status(404).json({ msg: "user not found" });
     }

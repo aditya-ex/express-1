@@ -1,16 +1,14 @@
 const User = require("../models/User");
-const checkObjectId = (access_token) => (req, res, next) => {
-  User.findById(req.headers[access_token]).exec(function (error, user) {
-    if (error) {
+
+const checkObjectId = (req, res, next) => {
+  const token = req.headers.access_token;
+  User.findById(token).exec(function (error, user) {
+    if (!user) {
+      let error = new Error("Not authorized");
+      error.status = 401;
       return next(error);
     } else {
-      if (user === null) {
-        let err = new Error("Not authorized");
-        err.status = 401;
-        return next(err);
-      } else {
-        return next();
-      }
+      return next();
     }
   });
 };
