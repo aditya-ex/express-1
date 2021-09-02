@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
+const md5 = require("md5");
 const bcrypt = require("bcrypt");
 const User = require("../models/User");
+const Token = require("../models/access_token");
+const Address = require("../models/address");
 const checkObjectId = require("../config/config");
 
 router.post("/register", async (req, res) => {
@@ -29,17 +32,21 @@ router.post("/login", async (req, res) => {
   if (user) {
     const validPassword = await bcrypt.compare(body.password, user.password);
     if (validPassword) {
-      let access_token = user._id;
-      res.send(access_token);
+      let token = new Token();
+      let access_token = md5(Date);
+      token.userId = user._id;
+      token.token = access_token;
+      let savedToken = await token.save();
+      res.send(savedToken);
     } else {
       res.status(500).send("internal server error");
     }
   }
 });
 
-router.get("/get", checkObjectId, async (req, res) => {
+router.get("/get", async (req, res) => {
   try {
-    const userResult = await User.findById(req.headers.access_token);
+    const userResult = await Address.findById(req.headers.access_token).populate("user_id");
     if (!userResult) {
       return res.status(404).json({ msg: "user not found" });
     }
@@ -57,7 +64,7 @@ router.put("/delete", checkObjectId, async (req, res) => {
       res.status(404).json({ msg: "user not found" });
     }
     userResult.remove();
-    res.json(userResult);
+    res.send("user removed");
   } catch (err) {
     console.log(err.message);
     res.status(500).send("server error");
@@ -75,4 +82,20 @@ router.get("/list/:page", async (req, res) => {
   res.json(userList);
 });
 
+router.post("/address", checkObjectId,async(req, res) => {
+  try{
+    const user = await User.findOne({ _id: req.headers.access_token });
+    const address = new Address();
+    address.user_id = user._id;
+    address.address = req.body.address;
+    address.state = req.body.state;
+    address.city = req.body.city;
+    address.pin_code = req.body.pin_code;
+    address.phone_no = req.body.phone_no;
+    let savedAddress = await address.save();
+    res.send(savedAddress);
+  }catch(err){
+    console.log(err);
+  }
+});
 module.exports = router;
