@@ -1,6 +1,6 @@
 const Token = require("../models/access_token");
 
-const checkObjectId = (req, res, next) => {
+const authentication = (req, res, next) => {
   const token = req.headers.access_token;
   let headerToken = Token.findOne({ token: token });
   if (!headerToken) {
@@ -12,4 +12,4 @@ const checkObjectId = (req, res, next) => {
   }
 };
 
-module.exports = checkObjectId;
+module.exports = authentication;
