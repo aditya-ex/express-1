@@ -8,29 +8,35 @@ const Address = require("../models/address");
 const checkObjectId = require("../config/config");
 
 router.post("/register", async (req, res) => {
-  const user = new User();
-  const salt = await bcrypt.genSalt(10);
-  user.username = req.body.username;
-  user.email = req.body.email;
-  user.firstname = req.body.firstname;
-  user.lastname = req.body.lastname;
-  password = req.body.password;
-  con_password = req.body.con_password;
-  if (password == con_password) {
-    user.password = await bcrypt.hash(password, salt);
-    let savedUser = await user.save();
-    res.status(201).send(savedUser);
-  } else {
-    res.status(401).send("unauthorized");
+  try {
+    const user = new User();
+    const salt = await bcrypt.genSalt(10);
+    user.username = req.body.username;
+    user.email = req.body.email;
+    user.firstname = req.body.firstname;
+    user.lastname = req.body.lastname;
+    password = req.body.password;
+    con_password = req.body.con_password;
+    if (password == con_password) {
+      user.password = await bcrypt.hash(password, salt);
+      let savedUser = await user.save();
+      res.status(201).send(savedUser);
+    } else {
+      res.status(401).send("unauthorized");
+    }
+  } catch (err) {
+    res.send(err);
   }
 });
 
 router.post("/login", async (req, res) => {
-  const body = req.body;
-  const user = await User.findOne({ username: body.username });
+  const user = await User.findOne({ username: req.body.username });
 
   if (user) {
-    const validPassword = await bcrypt.compare(body.password, user.password);
+    const validPassword = await bcrypt.compare(
+      req.body.password,
+      user.password
+    );
     if (validPassword) {
       let token = new Token();
       let access_token = md5(Date);
@@ -44,9 +50,9 @@ router.post("/login", async (req, res) => {
   }
 });
 
-router.get("/get", async (req, res) => {
+router.get("/get/:id", checkObjectId, async (req, res) => {
   try {
-    const userResult = await Address.findById(req.headers.access_token).populate("user_id");
+    const userResult = await Address.findById(req.params.id).populate("user_id");
     if (!userResult) {
       return res.status(404).json({ msg: "user not found" });
     }
@@ -59,7 +65,8 @@ router.get("/get", async (req, res) => {
 
 router.put("/delete", checkObjectId, async (req, res) => {
   try {
-    const userResult = await User.findById(req.headers.access_token);
+    const token = await Token.findOne({ token: req.headers.access_token });
+    const userResult = await User.findById({ _id: token.userId });
     if (!userResult) {
       res.status(404).json({ msg: "user not found" });
     }
@@ -82,9 +89,10 @@ router.get("/list/:page", async (req, res) => {
   res.json(userList);
 });
 
-router.post("/address", checkObjectId,async(req, res) => {
-  try{
-    const user = await User.findOne({ _id: req.headers.access_token });
+router.post("/address", checkObjectId, async (req, res) => {
+  try {
+    const token = await Token.findOne({ token: req.headers.access_token });
+    const user = await User.findOne({ _id: token.userId });
     const address = new Address();
     address.user_id = user._id;
     address.address = req.body.address;
@@ -94,7 +102,7 @@ router.post("/address", checkObjectId,async(req, res) => {
     address.phone_no = req.body.phone_no;
     let savedAddress = await address.save();
     res.send(savedAddress);
-  }catch(err){
+  } catch (err) {
     console.log(err);
   }
 });
