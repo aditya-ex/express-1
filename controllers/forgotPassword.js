@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const resetToken = require("../models/resetToken");
 const jwt = require("jsonwebtoken");
+const sendEmail = require("../utils/sendEmail");
 require("dotenv").config();
 
 const forgotPassword = async (req, res) => {
@@ -16,6 +17,8 @@ const forgotPassword = async (req, res) => {
         }),
       }).save();
     }
+    const link = `${process.env.BASE_URL}/verify_reset_password/${token.token}`;
+    await sendEmail(user.email, "reset password link", link);
     res.send(token);
   } catch (err) {
     res.send("an err occured");

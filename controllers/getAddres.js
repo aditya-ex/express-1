@@ -1,12 +1,11 @@
 const Address = require("../models/address");
+const User = require("../models/User");
 
 const getAddress = async (req, res) => {
   try {
-    const userResult = await Address.findById(req.params.id).populate(
-      "user_id"
-    );
+    const userResult = await User.findById(req.params.id).populate("address_id");
     if (!userResult) {
-      return res.status(404).json({ msg: "user not found" });
+      return res.status(404).send({ msg: "user not found" });
     }
     res.json(userResult);
   } catch (err) {

@@ -13,9 +13,12 @@ const saveAddress = async (req, res) => {
     address.city = req.body.city;
     address.pin_code = req.body.pin_code;
     address.phone_no = req.body.phone_no;
-    let savedAddress = await address.save();
-    res.send(savedAddress);
+    user.address_id = address._id;
+    await user.save();
+    await address.save();
+    res.send("address saved successfully");
   } catch (err) {
+    res.send("failed to save address");
     console.log(err);
   }
 };

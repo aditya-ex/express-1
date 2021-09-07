@@ -36,6 +36,7 @@ router.post(
   auth,
   resetPassword.resetPassword
 );
+
 let storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "../upload/");
@@ -56,4 +57,5 @@ let upload = multer({ storage: storage });
 router.post("/upload", upload.single("image"), localUpload.localUpload);
 
 router.post("/online_upload", uploadOnline.uploadOnline);
+
 module.exports = router;

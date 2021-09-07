@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const sendEmail = require("../utils/sendEmail");
 
 const register = async (req, res) => {
   try {
@@ -13,6 +14,7 @@ const register = async (req, res) => {
     con_password = req.body.con_password;
     if (password == con_password) {
       user.password = await bcrypt.hash(password, salt);
+      await sendEmail(user.email, "registration", "user registered successfully");
       await user.save();
       res.status(201).send("user saved");
     }
