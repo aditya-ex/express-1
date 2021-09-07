@@ -5,12 +5,12 @@ const UserSchema = new Schema({
   username: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   email: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
   },
   password: {
     type: String,
@@ -24,10 +24,12 @@ const UserSchema = new Schema({
     type: String,
     required: true,
   },
-  address_id: [{
-    type: Schema.Types.ObjectId,
-    ref: "Address"
-  }]
+  address_id: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Address",
+    },
+  ],
 });
 
 module.exports = User = mongoose.model("User", UserSchema);

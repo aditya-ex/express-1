@@ -7,9 +7,9 @@ const addressSchema = new Schema({
     ref: "User",
     required: true,
   },
-  address: { 
-    type: String, 
-    required: true 
+  address: {
+    type: String,
+    required: true,
   },
   city: {
     type: String,
