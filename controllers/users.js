@@ -70,8 +70,7 @@ const login = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const token = await Token.findOne({ token: req.headers.access_token });
-    const user = await User.findById({ _id: token.userId });
+    let user = req.user;
     if (!user) {
       res.send("user not found");
     }
@@ -79,13 +78,13 @@ const deleteUser = async (req, res) => {
     res.send("success");
   } catch (err) {
     res.send("failure");
+    console.log(err);
   }
 };
 
 const saveAddress = async (req, res) => {
   try {
-    const token = await Token.findOne({ token: req.headers.access_token });
-    const user = await User.findOne({ _id: token.userId });
+    let user = req.user;
     const address = new Address();
     address.user_id = user._id;
     address.address = req.body.address;
@@ -132,8 +131,7 @@ const list = async (req, res) => {
 const deleteAddress = async (req, res) => {
   try {
     let addressToDelete = [];
-    const token = await Token.findOne({ token: req.headers.access_token });
-    const address = await Address.find({ user_id: token.userId });
+    let address = req.address;
     for (let i = 0; i < address.length; i++) {
       let id = address[i]._id.toString();
       addressToDelete.push(id);
@@ -168,8 +166,7 @@ const forgotPassword = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const token = await Token.findOne({ token: req.headers.access_token });
-    const user = await User.findById({ _id: token.userId });
+    let user = req.user;
     if (!user) res.send("invalid user");
 
     const resetToken = await resetToken.findOne({
