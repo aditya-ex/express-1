@@ -41,32 +41,32 @@ const snapdeal = (req, res) => {
 
 const flipkart_full = async (req, res) => {
   const arr = [];
-  request({ method: "GET", url: flipkart_url }, (err, res, body) => {
+  request({ method: "GET", url: flipkart_url}, (err, res, body) => {
     if (err) console.error(err);
     let $ = cheerio.load(body);
     $("div._1AtVbE > div._13oc-S").each(function (index) {
       let url = $(this).find("a._1fQZEK").attr("href");
       arr.push(url);
     });
-    console.log(`https://www.flipkart.com${arr[0]}`);
+    console.log(arr);
   });
-  await request(
-    { method: "GET", url: `https://www.flipkart.com${arr[0]}` },
-    (err, res, body) => {
-      if (err) console.error(err);
-      let $ = cheerio.load(body);
-      $("div._1YokD2 > div._1AtVbE").each(function (index) {
-        let name = $(this).find("span.B_NuCI").text();
-        let price = $(this).find("div._30jeq3").text();
-        let obj = {
-          name: name,
-          price: price,
-        };
-        console.log(arr);
-        console.log(obj);
-      });
-    }
-  );
+  // let newUrl = `https://www.flipkart.com${arr[0]}`
+  // await request(
+  //   { method: "GET", url: newUrl },
+  //   (err, res, body) => {
+  //     if (err) console.error(err);
+  //     let $ = cheerio.load(body);
+  //     $("div._1YokD2 > div._1AtVbE").each(function (index) {
+  //       let name = $(this).find("span.B_NuCI").text();
+  //       let price = $(this).find("div._30jeq3").text();
+  //       let obj = {
+  //         name: name,
+  //         price: price,
+  //       };
+  //       console.log(arr);
+  //       console.log(body);
+  //     });
+  //   });
   res.send("fetched detailed data of flipkart");
 };
 
