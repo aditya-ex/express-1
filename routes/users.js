@@ -5,6 +5,17 @@ const users = require("../controllers/users");
 const auth = require("../middleware/auth");
 require("dotenv").config();
 
+let storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "../upload/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
+let upload = multer({ storage: storage });
+
 router.post("/register", users.register);
 
 router.post("/login", users.login);
@@ -26,17 +37,6 @@ router.post(
   auth,
   users.resetPassword
 );
-
-let storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "../upload/");
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
-
-let upload = multer({ storage: storage });
 
 router.post("/upload", upload.single("image"), users.localUpload);
 
