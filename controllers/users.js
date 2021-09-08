@@ -3,10 +3,10 @@ const Images = require("../models/images");
 const resetToken = require("../models/resetToken");
 const Token = require("../models/access_token");
 const User = require("../models/User");
-const bcrypt = require("bcrypt");
 const cloudinary = require("cloudinary");
 const sendEmail = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
+const passport = require("passport");
 require("dotenv").config();
 
 cloudinary.config({
@@ -17,22 +17,21 @@ cloudinary.config({
 
 const register = async (req, res) => {
   try {
-    const user = new User();
-    const salt = await bcrypt.genSalt(10);
-    user.username = req.body.username;
-    user.email = req.body.email;
-    user.firstname = req.body.firstname;
-    user.lastname = req.body.lastname;
+    const user = new User({
+      username: req.body.username,
+      email: req.body.email,
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+    });
     password = req.body.password;
     con_password = req.body.con_password;
     if (password == con_password) {
-      user.password = await bcrypt.hash(password, salt);
+      await User.register(user, password);
       await sendEmail(
         user.email,
         "registration",
         "user registered successfully"
       );
-      await user.save();
       res.send("successful");
     }
   } catch (err) {
@@ -44,10 +43,7 @@ const login = async (req, res) => {
   const user = await User.findOne({ username: req.body.username });
   try {
     if (user) {
-      const validPassword = await bcrypt.compare(
-        req.body.password,
-        user.password
-      );
+      const validPassword = await passport.authenticate("local");
       if (validPassword) {
         let token = new Token();
         let access_token = jwt.sign(
