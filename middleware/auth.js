@@ -1,27 +1,28 @@
-const Token = require("../models/access_token");
+const Token = require("../models/token");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const authentication = async (req, res, next) => {
-  let headerToken = req.headers.access_token;
-  const token = await Token.findOne({ token: headerToken });
-  const user = await User.findById({ _id: token.userId });
-  const address = await Address.find({ user_id: token.userId });
-  req.user = user;
-  req.address = address;
-  if (!headerToken) {
-    res.send("token required");
+  let token = req.headers.access_token;
+  if (token) {
+    jwt.verify(token, process.env.SECRET_KEY, async function (err, decoded) {
+      if (err) {
+        return res.send(err);
+      } else {
+        const token = await Token.findOne({ token: req.headers.access_token });
+        const user = await User.findById({ _id: token.userId });
+        req.user = user;
+        req.decoded = decoded;
+        next();
+      }
+    });
+  } else {
+    return res.status(403).send({
+      success: false,
+      message: "No token provided.",
+    });
   }
-  try {
-    let currentTime = Date.now().valueOf() /1000;
-    if(typeof headerToken.exp !== 'undefined' && headerToken.exp < currentTime){
-      res.send('token expired');
-    }
-  } catch (err) {
-    res.send('Invalid Token');
-  }
-  return next();
 };
 
 module.exports = authentication;

@@ -1,7 +1,6 @@
 const Address = require("../models/address");
 const Images = require("../models/images");
-const resetToken = require("../models/resetToken");
-const Token = require("../models/access_token");
+const Token = require("../models/token");
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const cloudinary = require("cloudinary");
@@ -34,6 +33,8 @@ const register = async (req, res) => {
       );
       await user.save();
       res.send("successful");
+    } else {
+      res.send("password don't match");
     }
   } catch (err) {
     res.send("failure");
@@ -51,34 +52,33 @@ const login = async (req, res) => {
       if (validPassword) {
         let token = new Token();
         let access_token = jwt.sign(
-          { userId: user._id },
+          { userId: user.toObject() },
           process.env.SECRET_KEY,
           {
-            expiresIn: "1h",
+            expiresIn: "100s",
           }
         );
         token.userId = user._id;
         token.token = access_token;
-        let savedToken = await token.save();
-        res.send(savedToken);
+        await token.save();
+        res.send(access_token);
       }
     }
   } catch (err) {
-    res.send("failure");
+    res.send(err);
   }
 };
 
 const deleteUser = async (req, res) => {
   try {
     let user = req.user;
-    if (!user) {
-      res.send("user not found");
-    }
     await user.remove();
+    await Token.deleteOne({ userId: user._id });
+    await Address.deleteMany({ user_id: user._id });
+    await Images.deleteOne({ user_id: user._id });
     res.send("success");
   } catch (err) {
-    res.send("failure");
-    console.log(err);
+    res.send(err);
   }
 };
 
@@ -93,10 +93,11 @@ const saveAddress = async (req, res) => {
     address.pin_code = req.body.pin_code;
     address.phone_no = req.body.phone_no;
     user.address_id = address._id;
-    await user.save();
     await address.save();
+    await user.save();
     res.send("success");
   } catch (err) {
+    console.log(err);
     res.send("failure");
   }
 };
@@ -147,18 +148,20 @@ const forgotPassword = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) res.send("user doesn't exist");
-    let token = await resetToken.findOne({ userId: user._id });
-    if (!token) {
-      token = await new resetToken({
-        userId: user._id,
-        token: jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
-          expiresIn: "600",
-        }),
-      }).save();
-    }
+    let token = await new Token();
+    let resetToken = jwt.sign(
+      { userId: user.toObject() },
+      process.env.SECRET_KEY,
+      {
+        expiresIn: "100s",
+      }
+    );
+    token.userId = user._id;
+    token.token = resetToken;
+    await token.save();
     const link = `${process.env.BASE_URL}/verify_reset_password/${token.token}`;
     await sendEmail(user.email, "reset password link", link);
-    res.send(token);
+    res.send(resetToken);
   } catch (err) {
     res.send("failed");
   }
@@ -166,30 +169,34 @@ const forgotPassword = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    let user = req.user;
+    const user = await User.findOne({ email: req.body.email });
     if (!user) res.send("invalid user");
-
-    const resetToken = await resetToken.findOne({
+    let resetToken = req.params.password_reset_token
+    const token = await Token.findOne({
       userId: user._id,
-      token: req.params.password_reset_token,
+      token: resetToken,
     });
-    if (!resetToken) res.send("invalid token");
+    if(token){
+      jwt.verify(resetToken, process.env.SECRET_KEY);
+    }
     let password = req.body.password;
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
     await user.save();
-    await resetToken.delete();
-    await sendEmail(user.sendEmail, "password reset successful");
+    await Token.deleteOne({ token: token.token });
+    await sendEmail(user.email, "reset password" ,"password reset successful");
     res.send("successful");
   } catch (err) {
-    res.send("failure");
+    res.send(err);
   }
 };
 
 const localUpload = async (req, res) => {
   try {
+    let user = req.user;
     let image = new Images({
-      images: req.file.path,
+      user_id: user._id,
+      images: req.files.image,
     });
     await image.save();
     res.send("success");
@@ -200,10 +207,14 @@ const localUpload = async (req, res) => {
 
 const uploadOnline = async (req, res) => {
   try {
-    const data = {
-      image: req.files.image,
-    };
-    await cloudinary.uploader.upload(data.image.tempFilePath);
+    let user = req.user;
+    const data = req.files.image;
+    let image = new Images({
+      user_id: user._id,
+      images: data,
+    });
+    await image.save();
+    await cloudinary.uploader.upload(data.tempFilePath);
     res.send("success");
   } catch (err) {
     res.send("failure");

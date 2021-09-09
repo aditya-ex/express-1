@@ -30,11 +30,10 @@ router.post("/address", auth, users.saveAddress);
 
 router.delete("/address/delete", auth, users.deleteAddress);
 
-router.post("/forgot-password", auth, users.forgotPassword);
+router.post("/forgot-password", users.forgotPassword);
 
 router.post(
   "/verify_reset_password/:password_reset_token",
-  auth,
   users.resetPassword
 );
 
