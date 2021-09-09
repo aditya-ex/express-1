@@ -4,70 +4,86 @@ const cheerio = require("cheerio");
 let flipkart_url =
   "https://www.flipkart.com/mobiles-accessories/mobiles/pr?sid=tyy,4io&otracker=categorytree";
 const flipkart = (req, res) => {
-  request({ method: "GET", url: flipkart_url }, (err, res, body) => {
-    if (err) console.error(err);
-    let $ = cheerio.load(body);
-    $("div._1AtVbE > div._13oc-S").each(function (index) {
-      let name = $(this).find("div._4rR01T").text();
-      let price = $(this).find("div._30jeq3").text();
-      const obj = {
-        name: name,
-        price: price,
-      };
-      console.log(obj);
+  try {
+    request({ method: "GET", url: flipkart_url }, (err, res, body) => {
+      if (err) console.error(err);
+      let $ = cheerio.load(body);
+      $("div._1AtVbE > div._13oc-S").each(function (index) {
+        let name = $(this).find("div._4rR01T").text();
+        let price = $(this).find("div._30jeq3").text();
+        const obj = {
+          name: name,
+          price: price,
+        };
+        console.log(obj);
+      });
     });
-  });
-  res.send("fetched data from flipkart");
+    res.send("success");
+  } catch (err) {
+    res.send("failure");
+    console.log(err);
+  }
 };
 
 let snapdeal_url =
   "https://www.snapdeal.com/search?keyword=tshirts&sort=rlvncy";
 const snapdeal = (req, res) => {
-  request({ method: "GET", url: snapdeal_url }, (err, res, body) => {
-    if (err) console.error(err);
-    let $ = cheerio.load(body);
-    $("div.favDp").each(function (index) {
-      let name = $(this).find("p.product-title").text();
-      let price = $(this).find("span.product-price").text();
-      const obj = {
-        name: name,
-        price: price,
-      };
-      console.log(obj);
+  try {
+    request({ method: "GET", url: snapdeal_url }, (err, res, body) => {
+      if (err) console.error(err);
+      let $ = cheerio.load(body);
+      $("div.favDp").each(function (index) {
+        let name = $(this).find("p.product-title").text();
+        let price = $(this).find("span.product-price").text();
+        const obj = {
+          name: name,
+          price: price,
+        };
+        console.log(obj);
+      });
     });
-  });
-  res.send("fetched data from snapdeal");
+    res.send("success");
+  } catch (err) {
+    res.send("failure");
+    console.log(err);
+  }
 };
 
+let newUrl =
+  "https://www.flipkart.com/poco-m3-power-black-64-gb/p/itmb49cc10841be2?pid=MOBFZTCUTAYPJHHR&lid=LSTMOBFZTCUTAYPJHHR2ZVC1N&marketplace=FLIPKART&store=tyy%2F4io&srno=b_1_1&otracker=browse&fm=organic&iid=6af4dd84-e797-4bcf-a524-e3034885b4d6.MOBFZTCUTAYPJHHR.SEARCH&ppt=None&ppn=None&ssid=cfvk01n5ps0000001631106998541";
 const flipkart_full = async (req, res) => {
   const arr = [];
-  request({ method: "GET", url: flipkart_url}, (err, res, body) => {
+  await request({ method: "GET", url: flipkart_url }, (err, res, body) => {
     if (err) console.error(err);
     let $ = cheerio.load(body);
     $("div._1AtVbE > div._13oc-S").each(function (index) {
       let url = $(this).find("a._1fQZEK").attr("href");
       arr.push(url);
     });
-    console.log(arr);
+    arr.map(function (url) {
+      return parseData("https://www.flipkart.com" + url);
+    });
   });
-  // let newUrl = `https://www.flipkart.com${arr[0]}`
-  // await request(
-  //   { method: "GET", url: newUrl },
-  //   (err, res, body) => {
-  //     if (err) console.error(err);
-  //     let $ = cheerio.load(body);
-  //     $("div._1YokD2 > div._1AtVbE").each(function (index) {
-  //       let name = $(this).find("span.B_NuCI").text();
-  //       let price = $(this).find("div._30jeq3").text();
-  //       let obj = {
-  //         name: name,
-  //         price: price,
-  //       };
-  //       console.log(arr);
-  //       console.log(body);
-  //     });
-  //   });
-  res.send("fetched detailed data of flipkart");
+  await res.send("success");
 };
+
+async function parseData(newUrl) {
+  try {
+    await request({ method: "GET", url: newUrl }, (err, res, body) => {
+      if (err) console.error(err);
+      let $ = cheerio.load(body);
+      let name = $("span.B_NuCI").text();
+      let price = $("div._16Jk6d").text();
+      let obj = {
+        name: name,
+        price: price,
+      };
+      console.log(obj);
+    });
+  } catch (err) {
+    res.send("failure");
+    console.log(err);
+  }
+}
 
 module.exports = { flipkart, snapdeal, flipkart_full };
