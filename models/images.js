@@ -8,7 +8,7 @@ const ImageSchema = new Schema({
     required: true,
   },
   images: {
-    type: String,
+    type: Buffer,
     required: true,
   },
 });

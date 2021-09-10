@@ -24,7 +24,7 @@ const UserSchema = new Schema({
     type: String,
     required: true,
   },
-  address_id: [
+  address: [
     {
       type: Schema.Types.ObjectId,
       ref: "Address",

@@ -32,13 +32,25 @@ const register = async (req, res) => {
         "registration",
         "user registered successfully"
       );
-      await user.save();
-      res.send("successful");
+      let savedUser = await user.save();
+      await res.send({
+        error: 0,
+        message: "user saved successfully",
+        data: savedUser,
+      });
     } else {
-      res.send("password don't match");
+      res.send({
+        error: 1,
+        message: "password don't match",
+        data: [],
+      });
     }
   } catch (err) {
-    res.send("failure");
+   await res.send({
+      error: 1,
+      message: "failed to save user",
+      data: err,
+    });
   }
 };
 
@@ -62,24 +74,40 @@ const login = async (req, res) => {
         token.userId = user._id;
         token.token = access_token;
         await token.save();
-        res.send(access_token);
+        res.send({
+          error: 0,
+          message: "access token sent",
+          data: access_token,
+        });
       }
     }
   } catch (err) {
-    res.send(err);
+    res.send({
+      error: 1,
+      message: "access token not sent",
+      data: err,
+    });
   }
 };
 
 const deleteUser = async (req, res) => {
   try {
     let user = req.user;
-    await user.remove();
+    await User.deleteOne({ _id: user._id });
     await Token.deleteOne({ userId: user._id });
     await Address.deleteMany({ user_id: user._id });
     await Images.deleteOne({ user_id: user._id });
-    res.send("success");
+    res.send({
+      error: 0,
+      message: "data deleted successfully",
+      data: [],
+    });
   } catch (err) {
-    res.send(err);
+    res.send({
+      error: 1,
+      message: "failed to delete data",
+      data: err,
+    });
   }
 };
 
@@ -93,12 +121,20 @@ const saveAddress = async (req, res) => {
     address.city = req.body.city;
     address.pin_code = req.body.pin_code;
     address.phone_no = req.body.phone_no;
-    user.address_id = address._id;
-    await address.save();
+    user.address.push(address._id);
     await user.save();
-    res.send("success");
+    let savedAddress = await address.save();
+    res.send({
+      error: 0,
+      message: "address saved successfully",
+      data: savedAddress,
+    });
   } catch (err) {
-    res.send("failure");
+    res.send({ 
+      error: 1,
+      message: "failed to save address",
+      data: err,
+    });
   }
 };
 
@@ -108,9 +144,17 @@ const getAddress = async (req, res) => {
     if (!user) {
       res.send("user not found");
     }
-    res.json(user);
+    res.send({
+      error: 0,
+      message: "populated user successfully",
+      data: user,
+    });
   } catch (err) {
-    res.send("failure");
+    res.send({
+      error: 1,
+      message: "failed to populate user",
+      data: err,
+    });
   }
 };
 
@@ -123,24 +167,40 @@ const list = async (req, res) => {
       .skip(perPage * (page - 1))
       .limit(perPage)
       .sort({ username: "asc" });
-    res.json(userList);
+    res.send({
+      error: 0,
+      message: "user list found",
+      data: userList,
+    });
   } catch (err) {
-    res.send("failure");
+    res.send({
+      error: 1,
+      message: "can't find user list",
+      data: err,
+    });
   }
 };
 
 const deleteAddress = async (req, res) => {
   try {
     let addressToDelete = [];
-    const token = await Token.findOne({ token: req.headers.access_token });
-    let address = await Address.find({ user_id: token.userId });
+    const user = req.user;
+    let address = await Address.find({ user_id: user._id });
     address.map((data) => {
       addressToDelete.push(data._id);
     });
     await Address.deleteMany({ _id: { $in: addressToDelete } });
-    res.send("successful");
+    res.send({
+      error: 0,
+      message: "address deleted successfully",
+      data: [],
+    });
   } catch (err) {
-    res.send("failure");
+    res.send({
+      error: 1,
+      message: "failed to delete address",
+      data: err,
+    });
   }
 };
 
@@ -157,17 +217,24 @@ const forgotPassword = async (req, res) => {
     await token.save();
     const link = `${process.env.BASE_URL}/verify_reset_password/${token.token}`;
     await sendEmail(user.email, "reset password link", link);
-    res.send(resetToken);
+    res.send({
+      error: 0,
+      message: "reset token send",
+      data: resetToken,
+    });
   } catch (err) {
-    res.send("failed");
+    res.send({
+      error: 1,
+      message: "can't send reset token",
+      data: err,
+    });
   }
 };
 
 const resetPassword = async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
-    if (!user) res.send("user not found");
     let resetToken = req.params.password_reset_token;
+    let user = User.findOne({_id: resetToken.userId});
     const token = await Token.findOne({
       userId: user._id,
       token: resetToken,
@@ -175,24 +242,36 @@ const resetPassword = async (req, res) => {
     if (token) {
       jwt.verify(resetToken, process.env.SECRET_KEY, async function (err) {
         if (err) {
-          res.send(err);
+          res.send({
+            error: 1,
+            message: "error occurred while verifying jwt",
+            data: err,
+          });
         } else {
           let password = req.body.password;
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(password, salt);
-          await user.save();
+          let savedUser = await user.save();
           await Token.deleteOne({ token: token.token });
           await sendEmail(
             user.email,
             "reset password",
             "password reset successful"
           );
-          res.send("successful");
+          res.send({
+            error: 0,
+            message: "password reset successful",
+            data: savedUser,
+          });
         }
       });
     }
   } catch (err) {
-    res.send(err);
+    res.send({
+      error: 1,
+      message: "failed to reset password",
+      data: err,
+    });
   }
 };
 
@@ -203,10 +282,19 @@ const localUpload = async (req, res) => {
       user_id: user._id,
       images: req.files.image,
     });
-    await image.save();
-    res.send("success");
+    let savedImage = await image.save();
+    res.send({
+      error: 0,
+      message: "image saved successfully",
+      data: savedImage,
+    });
   } catch (err) {
-    res.send("failure");
+    console.log(err);
+    res.send({
+      error: 1,
+      message: "failed to save image",
+      data: err,
+    });
   }
 };
 
@@ -218,11 +306,20 @@ const uploadOnline = async (req, res) => {
       user_id: user._id,
       images: data,
     });
-    await image.save();
+    let savedImage = await image.save();
     await cloudinary.uploader.upload(data.tempFilePath);
-    res.send("success");
+    res.send({
+      error: 0,
+      message: "image saved successfully",
+      data: "images saved",
+    });
   } catch (err) {
-    res.send("failure");
+    console.log(err);
+    res.send({
+      error: 1,
+      message: "failed to save image",
+      data: err,
+    });
   }
 };
 module.exports = {
