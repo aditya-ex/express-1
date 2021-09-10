@@ -1,7 +1,6 @@
 const Address = require("../models/address");
 const Images = require("../models/images");
-const resetToken = require("../models/resetToken");
-const Token = require("../models/access_token");
+const Token = require("../models/token");
 const User = require("../models/User");
 const cloudinary = require("cloudinary");
 const sendEmail = require("../utils/sendEmail");
@@ -33,6 +32,8 @@ const register = async (req, res) => {
         "user registered successfully"
       );
       res.send("successful");
+    }else{
+      res.send("password don't match");
     }
   } catch (err) {
     res.send("failure");
@@ -56,7 +57,7 @@ const login = async (req, res) => {
         token.userId = user._id;
         token.token = access_token;
         let savedToken = await token.save();
-        res.send(savedToken);
+        res.send(access_token);
       }
     }
   } catch (err) {

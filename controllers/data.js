@@ -49,8 +49,6 @@ const snapdeal = (req, res) => {
   }
 };
 
-let newUrl =
-  "https://www.flipkart.com/poco-m3-power-black-64-gb/p/itmb49cc10841be2?pid=MOBFZTCUTAYPJHHR&lid=LSTMOBFZTCUTAYPJHHR2ZVC1N&marketplace=FLIPKART&store=tyy%2F4io&srno=b_1_1&otracker=browse&fm=organic&iid=6af4dd84-e797-4bcf-a524-e3034885b4d6.MOBFZTCUTAYPJHHR.SEARCH&ppt=None&ppn=None&ssid=cfvk01n5ps0000001631106998541";
 const flipkart_full = async (req, res) => {
   const arr = [];
   await request({ method: "GET", url: flipkart_url }, (err, res, body) => {
