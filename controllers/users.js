@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const cloudinary = require("cloudinary");
 const sendEmail = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
+const { add } = require("cheerio/lib/api/traversing");
 require("dotenv").config();
 
 cloudinary.config({
@@ -52,10 +53,10 @@ const login = async (req, res) => {
       if (validPassword) {
         let token = new Token();
         let access_token = jwt.sign(
-          { userId: user.toObject() },
+          { userId: user._id },
           process.env.SECRET_KEY,
           {
-            expiresIn: "100s",
+            expiresIn: "1h",
           }
         );
         token.userId = user._id;
@@ -97,7 +98,6 @@ const saveAddress = async (req, res) => {
     await user.save();
     res.send("success");
   } catch (err) {
-    console.log(err);
     res.send("failure");
   }
 };
@@ -132,12 +132,12 @@ const list = async (req, res) => {
 const deleteAddress = async (req, res) => {
   try {
     let addressToDelete = [];
-    let address = req.address;
-    for (let i = 0; i < address.length; i++) {
-      let id = address[i]._id.toString();
-      addressToDelete.push(id);
-    }
-    await address.deleteMany({ _id: { $in: addressToDelete } });
+    const token = await Token.findOne({ token: req.headers.access_token });
+    let address = await Address.find({ user_id: token.userId });
+    address.map((data) => {
+      addressToDelete.push(data._id);
+    });
+    await Address.deleteMany({ _id: { $in: addressToDelete } });
     res.send("successful");
   } catch (err) {
     res.send("failure");
@@ -149,13 +149,9 @@ const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
     if (!user) res.send("user doesn't exist");
     let token = await new Token();
-    let resetToken = jwt.sign(
-      { userId: user.toObject() },
-      process.env.SECRET_KEY,
-      {
-        expiresIn: "100s",
-      }
-    );
+    let resetToken = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
+      expiresIn: "600s",
+    });
     token.userId = user._id;
     token.token = resetToken;
     await token.save();
@@ -170,22 +166,31 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
-    if (!user) res.send("invalid user");
-    let resetToken = req.params.password_reset_token
+    if (!user) res.send("user not found");
+    let resetToken = req.params.password_reset_token;
     const token = await Token.findOne({
       userId: user._id,
       token: resetToken,
     });
-    if(token){
-      jwt.verify(resetToken, process.env.SECRET_KEY);
+    if (token) {
+      jwt.verify(resetToken, process.env.SECRET_KEY, async function (err) {
+        if (err) {
+          res.send(err);
+        } else {
+          let password = req.body.password;
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(password, salt);
+          await user.save();
+          await Token.deleteOne({ token: token.token });
+          await sendEmail(
+            user.email,
+            "reset password",
+            "password reset successful"
+          );
+          res.send("successful");
+        }
+      });
     }
-    let password = req.body.password;
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
-    await user.save();
-    await Token.deleteOne({ token: token.token });
-    await sendEmail(user.email, "reset password" ,"password reset successful");
-    res.send("successful");
   } catch (err) {
     res.send(err);
   }

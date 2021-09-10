@@ -18,10 +18,7 @@ const authentication = async (req, res, next) => {
       }
     });
   } else {
-    return res.status(403).send({
-      success: false,
-      message: "No token provided.",
-    });
+    return res.send("No token provided");
   }
 };
 
