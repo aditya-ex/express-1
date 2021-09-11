@@ -208,7 +208,7 @@ const forgotPassword = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) res.send("user doesn't exist");
-    let token = await new Token();
+    let token = new Token();
     let resetToken = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
       expiresIn: "600s",
     });
@@ -232,22 +232,12 @@ const forgotPassword = async (req, res) => {
 };
 
 const resetPassword = async (req, res) => {
+  let resetToken = await req.params.password_reset_token;
   try {
-    let resetToken = req.params.password_reset_token;
-    let user = User.findOne({_id: resetToken.userId});
-    const token = await Token.findOne({
-      userId: user._id,
-      token: resetToken,
-    });
+    jwt.verify(resetToken, process.env.SECRET_KEY)
+    let token = await Token.findOne({token: resetToken});
+    let user = await User.findById({_id: token.userId});
     if (token) {
-      jwt.verify(resetToken, process.env.SECRET_KEY, async function (err) {
-        if (err) {
-          res.send({
-            error: 1,
-            message: "error occurred while verifying jwt",
-            data: err,
-          });
-        } else {
           let password = req.body.password;
           const salt = await bcrypt.genSalt(10);
           user.password = await bcrypt.hash(password, salt);
@@ -264,9 +254,8 @@ const resetPassword = async (req, res) => {
             data: savedUser,
           });
         }
-      });
-    }
-  } catch (err) {
+      }
+   catch (err) {
     res.send({
       error: 1,
       message: "failed to reset password",

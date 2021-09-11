@@ -4,19 +4,17 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const authentication = async (req, res, next) => {
-  let token = req.headers.access_token;
-  if (token) {
-    jwt.verify(token, process.env.SECRET_KEY, async function (err, decoded) {
-      if (err) {
-        return res.send(err);
-      } else {
-        const token = await Token.findOne({ token: req.headers.access_token });
-        const user = await User.findById({ _id: token.userId });
-        req.user = user;
-        req.decoded = decoded;
-        next();
-      }
-    });
+  let headerToken = await req.headers.access_token;
+  if (headerToken) {
+    try{
+      jwt.verify(headerToken, process.env.SECRET_KEY);
+      const token = await Token.findOne({ token: headerToken });
+      const user = await User.findById({ _id: token.userId });
+      req.user = user;
+      next();
+    }catch(err){
+      res.send(err);
+    }
   } else {
     return res.send("No token provided");
   }
