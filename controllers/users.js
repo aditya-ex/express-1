@@ -246,11 +246,11 @@ const resetPassword = async (req, res) => {
           await sendEmail(
             user.email,
             "reset password",
-            "password reset successful"
+            "password reset successfull"
           );
           res.send({
             error: 0,
-            message: "password reset successful",
+            message: "password reset successfull",
             data: savedUser,
           });
         }
