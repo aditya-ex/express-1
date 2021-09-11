@@ -6,9 +6,7 @@ const auth = require("../middleware/auth");
 require("dotenv").config();
 
 let storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "../upload");
-  },
+  destination: "images",
   filename: (req, file, cb) => {
     cb(null, file.originalname);
   },
@@ -37,7 +35,7 @@ router.post(
   users.resetPassword
 );
 
-router.post("/upload", upload.single("image"), users.localUpload);
+router.post("/upload", upload.single("image"),auth, users.localUpload);
 
 router.post("/online_upload", auth, users.uploadOnline);
 

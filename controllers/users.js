@@ -269,7 +269,7 @@ const localUpload = async (req, res) => {
     let user = req.user;
     let image = new Images({
       user_id: user._id,
-      images: req.files.image,
+      images: req.file.path,
     });
     let savedImage = await image.save();
     res.send({
