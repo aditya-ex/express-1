@@ -1,0 +1,320 @@
+const Address = require("../models/address");
+const Images = require("../models/images");
+const Token = require("../models/token");
+const User = require("../models/User");
+const cloudinary = require("cloudinary");
+const sendEmail = require("../utils/sendEmail");
+const jwt = require("jsonwebtoken");
+const passport = require("passport");
+require("dotenv").config();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.API_KEY,
+  api_secret: process.env.API_SECRET,
+});
+
+const register = async (req, res) => {
+  try {
+    const user = new User({
+      username: req.body.username,
+      email: req.body.email,
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+    });
+    password = req.body.password;
+    con_password = req.body.con_password;
+    if (password == con_password) {
+    let savedUser = await User.register(user, password);
+      await sendEmail(
+        user.email,
+        "registration",
+        "user registered successfully"
+      );
+      await res.send({
+        error: 0,
+        message: "user saved successfully",
+        data: savedUser,
+      });
+    }else{
+      res.send({
+        error: 1,
+        message: "password don't match",
+        data: [],
+      });
+    }
+  } catch (err) {
+    await res.send({
+      error: 1,
+      message: "failed to save user",
+      data: err,
+    });
+  }
+};
+
+const login = async (req, res) => {
+  const user = await User.findOne({ username: req.body.username });
+  try {
+    if (user) {
+      const validPassword = await passport.authenticate("local");
+      if (validPassword) {
+        let token = new Token();
+        let access_token = jwt.sign(
+          { userId: user._id },
+          process.env.SECRET_KEY,
+          {
+            expiresIn: "1h",
+          }
+        );
+        token.userId = user._id;
+        token.token = access_token;
+        await token.save();
+        res.send({
+          error: 0,
+          message: "access token sent",
+          data: access_token,
+        });
+      }
+    }
+  } catch (err) {
+    res.send({
+      error: 1,
+      message: "access token not sent",
+      data: err,
+    });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    let user = req.user;
+    await User.deleteOne({ _id: user._id });
+    await Token.deleteOne({ userId: user._id });
+    await Address.deleteMany({ user_id: user._id });
+    await Images.deleteOne({ user_id: user._id });
+    res.send({
+      error: 0,
+      message: "data deleted successfully",
+      data: [],
+    });
+  } catch (err) {
+    res.send({
+      error: 1,
+      message: "failed to delete data",
+      data: err,
+    });
+  }
+};
+
+const saveAddress = async (req, res) => {
+  try {
+    let user = req.user;
+    const address = new Address();
+    address.user_id = user._id;
+    address.address = req.body.address;
+    address.state = req.body.state;
+    address.city = req.body.city;
+    address.pin_code = req.body.pin_code;
+    address.phone_no = req.body.phone_no;
+    user.address.push(address._id);
+    await user.save();
+    let savedAddress = await address.save();
+    res.send({
+      error: 0,
+      message: "address saved successfully",
+      data: savedAddress,
+    });
+  } catch (err) {
+    console.log(err);
+    res.json({ 
+      error: 1,
+      message: "failed to save address",
+      data: err,
+    });
+  }
+};
+
+const getAddress = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).populate("address_id");
+    if (!user) {
+      res.send("user not found");
+    }
+    res.send({
+      error: 0,
+      message: "populated user successfully",
+      data: user,
+    });
+  } catch (err) {
+    res.send({
+      error: 1,
+      message: "failed to populate user",
+      data: err,
+    });
+  }
+};
+
+const list = async (req, res) => {
+  try {
+    let perPage = 10;
+    let page = Math.max(0, req.params["page"]);
+    let userList = await User.find()
+      .select("username")
+      .skip(perPage * (page - 1))
+      .limit(perPage)
+      .sort({ username: "asc" });
+      res.send({
+        error: 0,
+        message: "user list found",
+        data: userList,
+      });
+  } catch (err) {
+    res.send({
+      error: 1,
+      message: "can't find user list",
+      data: err,
+    });
+  }
+};
+
+const deleteAddress = async (req, res) => {
+  try {
+    let addressToDelete = [];
+    let address = req.address;
+    address.map((data) => {
+      addressToDelete.push(data._id);
+    });
+    await address.deleteMany({ _id: { $in: addressToDelete } });
+    res.send({
+      error: 0,
+      message: "address deleted successfully",
+      data: [],
+    });
+  } catch (err) {
+    res.send({
+      error: 1,
+      message: "failed to delete address",
+      data: err,
+    });
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) res.send("user doesn't exist");
+    let token = new Token();
+    let resetToken = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
+      expiresIn: "600s",
+    });
+    token.userId = user._id;
+    token.token = resetToken;
+    await token.save();
+    const link = `${process.env.BASE_URL}/verify_reset_password/${token.token}`;
+    await sendEmail(user.email, "reset password link", link);
+    res.send({
+      error: 0,
+      message: "reset token send",
+      data: resetToken,
+    });
+  } catch (err) {
+    res.send({
+      error: 1,
+      message: "can't send reset token",
+      data: err,
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  let resetToken = await req.params.password_reset_token;
+  try {
+    jwt.verify(resetToken, process.env.SECRET_KEY)
+    let token = await Token.findOne({token: resetToken});
+    let user = await User.findById({_id: token.userId});
+    if (token) {
+          let oldPassword = req.body.password;
+          let newPassword = req.body.newPassword;
+          let savedUser = await user.changePassword( oldPassword, newPassword);
+          await Token.deleteOne({ token: token.token });
+          await sendEmail(
+            user.email,
+            "reset password",
+            "password reset successfull"
+          );
+          res.send({
+            error: 0,
+            message: "password reset successfull",
+            data: savedUser,
+          });
+        }
+      }
+   catch (err) {
+    res.send({
+      error: 1,
+      message: "failed to reset password",
+      data: err,
+    });
+  }
+};
+
+const localUpload = async (req, res) => {
+  try {
+    let user = req.user;
+    let image = new Images({
+      user_id: user._id,
+      images: req.file.path,
+    });
+    let savedImage = await image.save();
+    res.send({
+      error: 0,
+      message: "image saved successfully",
+      data: savedImage,
+    });
+  } catch (err) {
+    res.send({
+      error: 1,
+      message: "failed to save image",
+      data: err,
+    });
+  }
+};
+
+const uploadOnline = async (req, res) => {
+  try {
+    let user = req.user;
+    const data = req.files.image;
+    let image = new Images({
+      user_id: user._id,
+      images: data,
+    });
+    let savedImage = await image.save();
+    await cloudinary.uploader.upload(data.tempFilePath);
+    res.send({
+      error: 0,
+      message: "image saved successfully",
+      data: savedImage,
+    });
+  } catch (err) {
+    console.log(err);
+    res.send({
+      error: 1,
+      message: "failed to save image",
+      data: err,
+    });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  deleteUser,
+  deleteAddress,
+  forgotPassword,
+  getAddress,
+  list,
+  localUpload,
+  resetPassword,
+  saveAddress,
+  uploadOnline,
+};
