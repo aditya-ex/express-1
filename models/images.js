@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const ImageSchema = new Schema({
-  images_id:{
+  user_id:{
     type: Schema.Types.ObjectId,
     ref: "User",
     required: true

@@ -6,9 +6,7 @@ const auth = require("../middleware/auth");
 require("dotenv").config();
 
 let storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "../upload/");
-  },
+  destination: "iages",
   filename: (req, file, cb) => {
     cb(null, file.originalname);
   },
@@ -30,16 +28,15 @@ router.post("/address", auth, users.saveAddress);
 
 router.delete("/address/delete", auth, users.deleteAddress);
 
-router.post("/forgot-password", auth, users.forgotPassword);
+router.post("/forgot-password", users.forgotPassword);
 
 router.post(
   "/verify_reset_password/:password_reset_token",
-  auth,
   users.resetPassword
 );
 
-router.post("/upload", upload.single("image"), users.localUpload);
+router.post("/upload", auth, upload.single("image"), users.localUpload);
 
-router.post("/online_upload", users.uploadOnline);
+router.post("/online_upload",auth, users.uploadOnline);
 
 module.exports = router;

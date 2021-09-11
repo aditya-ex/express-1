@@ -25,18 +25,30 @@ const register = async (req, res) => {
     password = req.body.password;
     con_password = req.body.con_password;
     if (password == con_password) {
-      await User.register(user, password);
+    let savedUser = await User.register(user, password);
       await sendEmail(
         user.email,
         "registration",
         "user registered successfully"
       );
-      res.send("successful");
+      await res.send({
+        error: 0,
+        message: "user saved successfully",
+        data: savedUser,
+      });
     }else{
-      res.send("password don't match");
+      res.send({
+        error: 1,
+        message: "password don't match",
+        data: [],
+      });
     }
   } catch (err) {
-    res.send("failure");
+    await res.send({
+      error: 1,
+      message: "failed to save user",
+      data: err,
+    });
   }
 };
 
@@ -56,26 +68,41 @@ const login = async (req, res) => {
         );
         token.userId = user._id;
         token.token = access_token;
-        let savedToken = await token.save();
-        res.send(access_token);
+        await token.save();
+        res.send({
+          error: 0,
+          message: "access token sent",
+          data: access_token,
+        });
       }
     }
   } catch (err) {
-    res.send("failure");
+    res.send({
+      error: 1,
+      message: "access token not sent",
+      data: err,
+    });
   }
 };
 
 const deleteUser = async (req, res) => {
   try {
     let user = req.user;
-    if (!user) {
-      res.send("user not found");
-    }
-    await user.remove();
-    res.send("success");
+    await User.deleteOne({ _id: user._id });
+    await Token.deleteOne({ userId: user._id });
+    await Address.deleteMany({ user_id: user._id });
+    await Images.deleteOne({ user_id: user._id });
+    res.send({
+      error: 0,
+      message: "data deleted successfully",
+      data: [],
+    });
   } catch (err) {
-    res.send("failure");
-    console.log(err);
+    res.send({
+      error: 1,
+      message: "failed to delete data",
+      data: err,
+    });
   }
 };
 
@@ -89,12 +116,21 @@ const saveAddress = async (req, res) => {
     address.city = req.body.city;
     address.pin_code = req.body.pin_code;
     address.phone_no = req.body.phone_no;
-    user.address_id = address._id;
+    user.address.push(address._id);
     await user.save();
-    await address.save();
-    res.send("success");
+    let savedAddress = await address.save();
+    res.send({
+      error: 0,
+      message: "address saved successfully",
+      data: savedAddress,
+    });
   } catch (err) {
-    res.send("failure");
+    console.log(err);
+    res.json({ 
+      error: 1,
+      message: "failed to save address",
+      data: err,
+    });
   }
 };
 
@@ -104,9 +140,17 @@ const getAddress = async (req, res) => {
     if (!user) {
       res.send("user not found");
     }
-    res.json(user);
+    res.send({
+      error: 0,
+      message: "populated user successfully",
+      data: user,
+    });
   } catch (err) {
-    res.send("failure");
+    res.send({
+      error: 1,
+      message: "failed to populate user",
+      data: err,
+    });
   }
 };
 
@@ -119,9 +163,17 @@ const list = async (req, res) => {
       .skip(perPage * (page - 1))
       .limit(perPage)
       .sort({ username: "asc" });
-    res.json(userList);
+      res.send({
+        error: 0,
+        message: "user list found",
+        data: userList,
+      });
   } catch (err) {
-    res.send("failure");
+    res.send({
+      error: 1,
+      message: "can't find user list",
+      data: err,
+    });
   }
 };
 
@@ -129,14 +181,21 @@ const deleteAddress = async (req, res) => {
   try {
     let addressToDelete = [];
     let address = req.address;
-    for (let i = 0; i < address.length; i++) {
-      let id = address[i]._id.toString();
-      addressToDelete.push(id);
-    }
+    address.map((data) => {
+      addressToDelete.push(data._id);
+    });
     await address.deleteMany({ _id: { $in: addressToDelete } });
-    res.send("successful");
+    res.send({
+      error: 0,
+      message: "address deleted successfully",
+      data: [],
+    });
   } catch (err) {
-    res.send("failure");
+    res.send({
+      error: 1,
+      message: "failed to delete address",
+      data: err,
+    });
   }
 };
 
@@ -144,68 +203,108 @@ const forgotPassword = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
     if (!user) res.send("user doesn't exist");
-    let token = await resetToken.findOne({ userId: user._id });
-    if (!token) {
-      token = await new resetToken({
-        userId: user._id,
-        token: jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
-          expiresIn: "600",
-        }),
-      }).save();
-    }
+    let token = new Token();
+    let resetToken = jwt.sign({ userId: user._id }, process.env.SECRET_KEY, {
+      expiresIn: "600s",
+    });
+    token.userId = user._id;
+    token.token = resetToken;
+    await token.save();
     const link = `${process.env.BASE_URL}/verify_reset_password/${token.token}`;
     await sendEmail(user.email, "reset password link", link);
-    res.send(token);
+    res.send({
+      error: 0,
+      message: "reset token send",
+      data: resetToken,
+    });
   } catch (err) {
-    res.send("failed");
+    res.send({
+      error: 1,
+      message: "can't send reset token",
+      data: err,
+    });
   }
 };
 
 const resetPassword = async (req, res) => {
+  let resetToken = await req.params.password_reset_token;
   try {
-    let user = req.user;
-    if (!user) res.send("invalid user");
-
-    const resetToken = await resetToken.findOne({
-      userId: user._id,
-      token: req.params.password_reset_token,
+    jwt.verify(resetToken, process.env.SECRET_KEY)
+    let token = await Token.findOne({token: resetToken});
+    let user = await User.findById({_id: token.userId});
+    if (token) {
+          let oldPassword = req.body.password;
+          let newPassword = req.body.newPassword;
+          let savedUser = await user.changePassword( oldPassword, newPassword);
+          await Token.deleteOne({ token: token.token });
+          await sendEmail(
+            user.email,
+            "reset password",
+            "password reset successfull"
+          );
+          res.send({
+            error: 0,
+            message: "password reset successfull",
+            data: savedUser,
+          });
+        }
+      }
+   catch (err) {
+    res.send({
+      error: 1,
+      message: "failed to reset password",
+      data: err,
     });
-    if (!resetToken) res.send("invalid token");
-    let password = req.body.password;
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
-    await user.save();
-    await resetToken.delete();
-    await sendEmail(user.sendEmail, "password reset successful");
-    res.send("successful");
-  } catch (err) {
-    res.send("failure");
   }
 };
 
 const localUpload = async (req, res) => {
   try {
+    let user = req.user;
     let image = new Images({
+      user_id: user._id,
       images: req.file.path,
     });
-    await image.save();
-    res.send("success");
+    let savedImage = await image.save();
+    res.send({
+      error: 0,
+      message: "image saved successfully",
+      data: savedImage,
+    });
   } catch (err) {
-    res.send("failure");
+    res.send({
+      error: 1,
+      message: "failed to save image",
+      data: err,
+    });
   }
 };
 
 const uploadOnline = async (req, res) => {
   try {
-    const data = {
-      image: req.files.image,
-    };
-    await cloudinary.uploader.upload(data.image.tempFilePath);
-    res.send("success");
+    let user = req.user;
+    const data = req.files.image;
+    let image = new Images({
+      user_id: user._id,
+      images: data,
+    });
+    let savedImage = await image.save();
+    await cloudinary.uploader.upload(data.tempFilePath);
+    res.send({
+      error: 0,
+      message: "image saved successfully",
+      data: savedImage,
+    });
   } catch (err) {
-    res.send("failure");
+    console.log(err);
+    res.send({
+      error: 1,
+      message: "failed to save image",
+      data: err,
+    });
   }
 };
+
 module.exports = {
   register,
   login,

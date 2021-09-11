@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 const nodemailerSendgrid = require("nodemailer-sendgrid");
 require("dotenv").config();
 
-const sendEmail = async (email, subject, text) => {
+const sendEmail = async (email, subject, text, res) => {
   try {
     const transport = nodemailer.createTransport(
       nodemailerSendgrid({
@@ -16,7 +16,11 @@ const sendEmail = async (email, subject, text) => {
       text: text,
     });
   } catch (err) {
-    console.error(err.response.body);
+    res.send({
+      error: 1,
+      message: "failed to send mail",
+      data: err,
+    });
   }
 };
 module.exports = sendEmail;

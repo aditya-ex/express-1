@@ -13,10 +13,6 @@ const UserSchema = new Schema({
     required: true,
     unique: true,
   },
-  // password: {
-  //   type: String,
-  //   required: true,
-  // },
   firstname: {
     type: String,
     required: true,
@@ -25,7 +21,7 @@ const UserSchema = new Schema({
     type: String,
     required: true,
   },
-  address_id: [
+  address: [
     {
       type: Schema.Types.ObjectId,
       ref: "Address",
