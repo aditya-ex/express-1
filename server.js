@@ -20,6 +20,11 @@ mongoose
 
 app.use(express.json());
 app.use(fileupload({ useTempFiles: true }));
+
+app.get("/", (req, res)=>{
+  res.send("this is my express app");
+});
+
 app.use("/user", users);
 app.use("/fetch", data);
 
