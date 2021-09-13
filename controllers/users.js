@@ -84,7 +84,7 @@ const login = async (req, res) => {
   } catch (err) {
     res.send({
       error: 1,
-      message:  err.message || "access token not sent",
+      message: err.message || "access token not sent",
       data: err,
     });
   }
@@ -105,7 +105,7 @@ const deleteUser = async (req, res) => {
   } catch (err) {
     res.send({
       error: 1,
-      message:  err.message || "failed to delete data",
+      message: err.message || "failed to delete data",
       data: err,
     });
   }
@@ -130,9 +130,9 @@ const saveAddress = async (req, res) => {
       data: savedAddress,
     });
   } catch (err) {
-    res.send({ 
+    res.send({
       error: 1,
-      message:  err.message || "failed to save address",
+      message: err.message || "failed to save address",
       data: err,
     });
   }
@@ -152,7 +152,7 @@ const getAddress = async (req, res) => {
   } catch (err) {
     res.send({
       error: 1,
-      message:  err.message || "failed to populate user",
+      message: err.message || "failed to populate user",
       data: err,
     });
   }
@@ -175,7 +175,7 @@ const list = async (req, res) => {
   } catch (err) {
     res.send({
       error: 1,
-      message:  err.message || "can't find user list",
+      message: err.message || "can't find user list",
       data: err,
     });
   }
@@ -198,7 +198,7 @@ const deleteAddress = async (req, res) => {
   } catch (err) {
     res.send({
       error: 1,
-      message:  err.message || "failed to delete address",
+      message: err.message || "failed to delete address",
       data: err,
     });
   }
@@ -225,7 +225,7 @@ const forgotPassword = async (req, res) => {
   } catch (err) {
     res.send({
       error: 1,
-      message:  err.message || "can't send reset token",
+      message: err.message || "can't send reset token",
       data: err,
     });
   }
@@ -234,31 +234,30 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async (req, res) => {
   let resetToken = req.params.password_reset_token;
   try {
-    await jwt.verify(resetToken, process.env.SECRET_KEY)
-    let token = await Token.findOne({token: resetToken});
-    let user = await User.findById({_id: token.userId});
+    await jwt.verify(resetToken, process.env.SECRET_KEY);
+    let token = await Token.findOne({ token: resetToken });
+    let user = await User.findById({ _id: token.userId });
     if (token) {
-          let password = req.body.password;
-          const salt = await bcrypt.genSalt(10);
-          user.password = await bcrypt.hash(password, salt);
-          let savedUser = await user.save();
-          await Token.deleteOne({ token: token.token });
-          await sendEmail(
-            user.email,
-            "reset password",
-            "password reset successfull"
-          );
-          res.send({
-            error: 0,
-            message: "password reset successfull",
-            data: savedUser,
-          });
-        }
-      }
-   catch (err) {
+      let password = req.body.password;
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+      let savedUser = await user.save();
+      await Token.deleteOne({ token: token.token });
+      await sendEmail(
+        user.email,
+        "reset password",
+        "password reset successfull"
+      );
+      res.send({
+        error: 0,
+        message: "password reset successfull",
+        data: savedUser,
+      });
+    }
+  } catch (err) {
     res.send({
       error: 1,
-      message:  err.message || "failed to reset password",
+      message: err.message || "failed to reset password",
       data: err,
     });
   }
@@ -281,7 +280,7 @@ const localUpload = async (req, res) => {
     console.log(err);
     res.send({
       error: 1,
-      message:  err.message || "failed to save image",
+      message: err.message || "failed to save image",
       data: err,
     });
   }
@@ -306,7 +305,7 @@ const uploadOnline = async (req, res) => {
     console.log(err);
     res.send({
       error: 1,
-      message:  err.message || "failed to save image",
+      message: err.message || "failed to save image",
       data: err,
     });
   }
