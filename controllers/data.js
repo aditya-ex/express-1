@@ -15,9 +15,10 @@ const flipkart = (req, res) => {
         price: price,
       };
       console.log(obj);
+      res.send(obj);
     });
   });
-  res.send("fetched data from flipkart");
+  // res.send("fetched data from flipkart");
 };
 
 let snapdeal_url =
