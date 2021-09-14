@@ -11,7 +11,8 @@ app.use(bodyParser.json());
 
 require("dotenv").config();
 
-const db = process.env.URI;
+// const db = process.env.URI;
+const db = "mongodb+srv://aditya:adi@123@cluster0.izpgp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
 mongoose
   .connect(db, { useNewUrlParser: true, useUnifiedTopology: true })
