@@ -18,7 +18,7 @@ const sendEmail = async (email, subject, text, res) => {
   } catch (err) {
     res.send({
       error: 1,
-      message: err.message || "failed to send mail",
+      message: "failed to send mail",
       data: err,
     });
   }
