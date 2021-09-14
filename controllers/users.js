@@ -36,7 +36,7 @@ const register = async (req, res) => {
       res.send({
         error: 0,
         message: "user saved successfully",
-        data: savedUser,
+        // data: savedUser,
       });
     } else {
       res.send({
