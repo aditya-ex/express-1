@@ -48,7 +48,7 @@ const register = async (req, res) => {
   } catch (err) {
     res.send({
       error: 1,
-      message: "failed to save user",
+      message: "failed to save new user",
       data: err,
     });
   }
