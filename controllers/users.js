@@ -81,6 +81,7 @@ const login = async (req, res) => {
         });
       }
     }
+    // else part needed
   } catch (err) {
     res.send({
       error: 1,
@@ -292,7 +293,7 @@ const uploadOnline = async (req, res) => {
     const data = req.files.image;
     let image = new Images({
       user_id: user._id,
-      images: data,
+      images: data.tempFilePath,
     });
     let savedImage = await image.save();
     await cloudinary.uploader.upload(data.tempFilePath);
