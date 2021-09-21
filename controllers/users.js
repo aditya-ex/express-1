@@ -6,7 +6,8 @@ const bcrypt = require("bcrypt");
 const cloudinary = require("cloudinary");
 const sendEmail = require("../utils/sendEmail");
 const jwt = require("jsonwebtoken");
-const { add } = require("cheerio/lib/api/traversing");
+const fs = require("fs");
+// const { add } = require("cheerio/lib/api/traversing");
 require("dotenv").config();
 
 cloudinary.config({
@@ -80,8 +81,13 @@ const login = async (req, res) => {
           data: access_token,
         });
       }
+    } else {
+      res.send({
+        error: 1,
+        message: "password don't match",
+        data: [],
+      });
     }
-    // else part needed
   } catch (err) {
     res.send({
       error: 1,
@@ -267,9 +273,11 @@ const resetPassword = async (req, res) => {
 const localUpload = async (req, res) => {
   try {
     let user = req.user;
+    let img = fs.readFileSync(req.file.path);
+    let encoded_image = img.toString("base64");
     let image = new Images({
       user_id: user._id,
-      images: req.file.path,
+      images: new Buffer(encoded_image, 'base64'),
     });
     let savedImage = await image.save();
     res.send({
@@ -287,16 +295,24 @@ const localUpload = async (req, res) => {
   }
 };
 
+const local = async (req, res) => {
+  let id = req.params.id;
+  let foundImage = await Images.findById({ _id: id });
+  res.contentType('image/jpeg');
+  res.send(foundImage.images);
+};
+
 const uploadOnline = async (req, res) => {
   try {
+    console.log(req)
     let user = req.user;
-    const data = req.files.image;
+    const data = req.file.path;
+    let uploadedImage = await cloudinary.v2.uploader.upload(data);
     let image = new Images({
       user_id: user._id,
-      images: data.tempFilePath,
+      imageURL: uploadedImage.secure_url,
     });
     let savedImage = await image.save();
-    await cloudinary.uploader.upload(data.tempFilePath);
     res.send({
       error: 0,
       message: "image saved successfully",
@@ -320,6 +336,7 @@ module.exports = {
   getAddress,
   list,
   localUpload,
+  local,
   resetPassword,
   saveAddress,
   uploadOnline,

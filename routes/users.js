@@ -8,7 +8,7 @@ require("dotenv").config();
 let storage = multer.diskStorage({
   destination: "images",
   filename: (req, file, cb) => {
-    cb(null, file.originalname);
+    cb(null, Date.now() + file.originalname);
   },
 });
 
@@ -37,6 +37,8 @@ router.post(
 
 router.post("/upload", auth, upload.single("image"), users.localUpload);
 
-router.post("/online_upload", auth, users.uploadOnline);
+router.get("/localUploadedImg/:id", users.local);
+
+router.post("/online_upload", auth,upload.single("image"), users.uploadOnline);
 
 module.exports = router;

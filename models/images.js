@@ -8,9 +8,11 @@ const ImageSchema = new Schema({
     required: true,
   },
   images: {
-    type: String,
-    required: true,
+    type: Buffer,
   },
+  imageURL:{
+    type: String,
+  } 
 });
 
 module.exports = Images = mongoose.model("Images", ImageSchema);
