@@ -2,12 +2,12 @@ const Address = require("../models/address");
 const Images = require("../models/images");
 const Token = require("../models/token");
 const User = require("../models/User");
-const bcrypt = require("bcrypt");
-const cloudinary = require("cloudinary");
-const sendEmail = require("../utils/sendEmail");
-const jwt = require("jsonwebtoken");
 const fs = require("fs");
-// const { add } = require("cheerio/lib/api/traversing");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+const sendEmail = require("../utils/sendEmail");
+const cloudinary = require("cloudinary");
+
 require("dotenv").config();
 
 cloudinary.config({
@@ -80,11 +80,17 @@ const login = async (req, res) => {
           message: "access token sent",
           data: access_token,
         });
+      }else {
+        res.send({
+          error: 1,
+          message: "password don't match",
+          data: [],
+        });
       }
-    } else {
+    } else{
       res.send({
         error: 1,
-        message: "password don't match",
+        message: "user not found",
         data: [],
       });
     }
@@ -277,7 +283,7 @@ const localUpload = async (req, res) => {
     let encoded_image = img.toString("base64");
     let image = new Images({
       user_id: user._id,
-      images: new Buffer(encoded_image, 'base64'),
+      images: Buffer.from(encoded_image, 'base64'),
     });
     let savedImage = await image.save();
     res.send({
@@ -295,7 +301,7 @@ const localUpload = async (req, res) => {
   }
 };
 
-const local = async (req, res) => {
+const getLocalImage = async (req, res) => {
   let id = req.params.id;
   let foundImage = await Images.findById({ _id: id });
   res.contentType('image/jpeg');
@@ -336,7 +342,7 @@ module.exports = {
   getAddress,
   list,
   localUpload,
-  local,
+  getLocalImage,
   resetPassword,
   saveAddress,
   uploadOnline,
