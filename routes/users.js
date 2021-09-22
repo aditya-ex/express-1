@@ -37,8 +37,8 @@ router.post(
 
 router.post("/upload", auth, upload.single("image"), users.localUpload);
 
-router.get("/localUploadedImg/:id", users.getLocalImage);
+router.get("/localUploadedImg/:id", auth, users.getLocalImage);
 
-router.post("/online_upload", auth,upload.single("image"), users.uploadOnline);
+router.post("/online_upload", auth, upload.single("image"), users.uploadOnline);
 
 module.exports = router;

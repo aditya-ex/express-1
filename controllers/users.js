@@ -80,14 +80,14 @@ const login = async (req, res) => {
           message: "access token sent",
           data: access_token,
         });
-      }else {
+      } else {
         res.send({
           error: 1,
           message: "password don't match",
           data: [],
         });
       }
-    } else{
+    } else {
       res.send({
         error: 1,
         message: "user not found",
@@ -283,7 +283,7 @@ const localUpload = async (req, res) => {
     let encoded_image = img.toString("base64");
     let image = new Images({
       user_id: user._id,
-      images: Buffer.from(encoded_image, 'base64'),
+      images: Buffer.from(encoded_image, "base64"),
     });
     let savedImage = await image.save();
     res.send({
@@ -303,14 +303,34 @@ const localUpload = async (req, res) => {
 
 const getLocalImage = async (req, res) => {
   let id = req.params.id;
-  let foundImage = await Images.findById({ _id: id });
-  res.contentType('image/jpeg');
-  res.send(foundImage.images);
+  if (id) {
+    try {
+      let foundImage = await Images.findById({ _id: id });
+      res.contentType("image/jpeg");
+      res.send({
+        error: 1,
+        message: "image found",
+        data: foundImage.images,
+      });
+    } catch (err) {
+      res.send({
+        error: 1,
+        message: err.message || "an error occurred",
+        data: err,
+      });
+    }
+  } else {
+    res.send({
+      error: 1,
+      message: "image not found",
+      data: [],
+    });
+  }
 };
 
 const uploadOnline = async (req, res) => {
   try {
-    console.log(req)
+    console.log(req);
     let user = req.user;
     const data = req.file.path;
     let uploadedImage = await cloudinary.v2.uploader.upload(data);
