@@ -306,12 +306,14 @@ const getLocalImage = async (req, res) => {
   if (id) {
     try {
       let foundImage = await Images.findById({ _id: id });
+      console.log(foundImage.images);
       res.contentType("image/jpeg");
-      res.send({
-        error: 1,
-        message: "image found",
-        data: foundImage.images,
-      });
+      res.send(foundImage.images);
+      // res.send({
+      //   error: 0,
+      //   message: "image found",
+      //   data: foundImage.images,
+      // });
     } catch (err) {
       res.send({
         error: 1,
