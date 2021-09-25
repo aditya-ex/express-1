@@ -1,8 +1,8 @@
 const request = require("request");
 const cheerio = require("cheerio");
 
-let flipkart_url =
-  "https://www.flipkart.com/mobiles-accessories/mobiles/pr?sid=tyy,4io&otracker=categorytree";
+let flipkart_url ="https://www.flipkart.com/mobiles/pr?sid=tyy%2C4io&p%5B%5D=facets.brand%255B%255D%3Drealme&p%5B%5D=facets.availability%255B%255D%3DExclude%2BOut%2Bof%2BStock&param=7564&otracker=clp_metro_expandable_1_3.metroExpandable.METRO_EXPANDABLE_Shop%2BNow_mobile-phones-store_Q1PDG4YW86MF_wp3&fm=neo%2Fmerchandising&iid=M_088d54e5-79b9-44dc-a610-c4c2846dfc2b_3.Q1PDG4YW86MF&ppt=browse&ppn=browse&ssid=6v31tf69o00000001632567335175";
+  // "https://www.flipkart.com/mobiles-accessories/mobiles/pr?sid=tyy,4io&otracker=categorytree";
 const flipkart = (req, res) => {
   request({ method: "GET", url: flipkart_url }, (err, res, body) => {
     if (err) console.error(err);

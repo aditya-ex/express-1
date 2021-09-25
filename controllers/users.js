@@ -306,7 +306,6 @@ const getLocalImage = async (req, res) => {
   if (id) {
     try {
       let foundImage = await Images.findById({ _id: id });
-      console.log(foundImage.images);
       res.contentType("image/jpeg");
       res.send(foundImage.images);
       // res.send({
@@ -332,7 +331,6 @@ const getLocalImage = async (req, res) => {
 
 const uploadOnline = async (req, res) => {
   try {
-    console.log(req);
     let user = req.user;
     const data = req.file.path;
     let uploadedImage = await cloudinary.v2.uploader.upload(data);
@@ -347,7 +345,6 @@ const uploadOnline = async (req, res) => {
       data: savedImage,
     });
   } catch (err) {
-    console.log(err);
     res.send({
       error: 1,
       message: err.message || "failed to save image",

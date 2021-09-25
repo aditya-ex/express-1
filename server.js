@@ -3,7 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const users = require("./routes/users");
 const data = require("./routes/data");
-// const fileupload = require("express-fileupload");
+
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -19,7 +19,6 @@ mongoose
   .catch((err) => console.log(err));
 
 app.use(express.json());
-// app.use(fileupload({ useTempFiles: true }));
 
 app.get("/", (req, res)=>{
   res.send("this is my express app");
