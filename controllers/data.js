@@ -2,7 +2,8 @@ const request = require("request");
 const cheerio = require("cheerio");
 
 let flipkart_url =
-  "https://www.flipkart.com/mobiles-accessories/mobiles/pr?sid=tyy,4io&otracker=categorytree";
+  "https://www.flipkart.com/mobiles-accessories/mobiles/pr?sid=tyy%2C4io&otracker=categorytree&p%5B%5D=facets.brand%255B%255D%3DAPPLE";
+// "https://www.flipkart.com/mobiles-accessories/mobiles/pr?sid=tyy,4io&otracker=categorytree";
 const flipkart = (req, res) => {
   try {
     request({ method: "GET", url: flipkart_url }, (err, res, body) => {
@@ -51,7 +52,7 @@ const snapdeal = (req, res) => {
 
 const flipkart_full = async (req, res) => {
   const arr = [];
-  await request({ method: "GET", url: flipkart_url }, (err, res, body) => {
+  request({ method: "GET", url: flipkart_url }, (err, res, body) => {
     if (err) console.error(err);
     let $ = cheerio.load(body);
     $("div._1AtVbE > div._13oc-S").each(function (index) {
@@ -62,7 +63,7 @@ const flipkart_full = async (req, res) => {
       return parseData("https://www.flipkart.com" + url);
     });
   });
-  await res.send("success");
+  res.send("success");
 };
 
 async function parseData(newUrl) {
@@ -84,7 +85,7 @@ async function parseData(newUrl) {
         ratingAndReview: ratingAndReview,
         highlights: highlights,
         sellersCode: sellersCode,
-        sellersRating:sellersRating,
+        sellersRating: sellersRating,
       };
       console.log(obj);
     });
