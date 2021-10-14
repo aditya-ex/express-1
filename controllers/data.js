@@ -9,9 +9,10 @@ const flipkart = (req, res) => {
     request({ method: "GET", url: flipkart_url }, (err, res, body) => {
       if (err) console.error(err);
       let $ = cheerio.load(body);
-      $("div._1AtVbE > div._13oc-S").each(function (index) {
-        let name = $(this).find("div._4rR01T").text();
-        let price = $(this).find("div._30jeq3").text();
+      $("div._1AtVbE > div._13oc-S").each(function (index, element) {
+        // console.log(index);
+        let name = $(element).find("div._4rR01T").text();
+        let price = $(element).find("div._30jeq3").text();
         const obj = {
           name: name,
           price: price,
